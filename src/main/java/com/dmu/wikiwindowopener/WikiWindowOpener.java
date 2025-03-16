@@ -3,6 +3,8 @@ package com.dmu.wikiwindowopener;
 import com.dmu.wikiwindowopener.item.ModItems;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.minecraft.item.ItemGroups;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,8 +18,11 @@ public class WikiWindowOpener implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		ModItems.register();
-
+		ModItems.initialize();
+		//add item to creative menu
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(content -> {
+			content.add(ModItems.WIKI_OPENER);
+		});
 	}
 
 
