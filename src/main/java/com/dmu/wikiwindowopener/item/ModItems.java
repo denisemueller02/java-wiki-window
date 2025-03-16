@@ -19,9 +19,9 @@ import net.minecraft.world.World;
 public class ModItems {
     public static final Item.Settings settings = new Item.Settings()
             .registryKey(RegistryKey.of(RegistryKeys.ITEM, Identifier.of("wikiwindowopener", "wiki_opener")));
-    public static final Item WIKI_OPENER = registerItem("wiki_opener", new Item(settings));
+    public static final WikiOpener WIKI_OPENER = registerItem("wiki_opener", new WikiOpener(settings));
 
-    private static Item registerItem(String name, Item item) {
+    private static WikiOpener registerItem(String name, WikiOpener item) {
         return Registry.register(Registries.ITEM, Identifier.of(WikiWindowOpener.MOD_ID, name), item);
     };
     public static void register() {
@@ -31,8 +31,4 @@ public class ModItems {
         });
     }
 
-    public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        user.playSound(SoundEvents.BLOCK_WOOL_BREAK, 1.0F, 1.0F);
-        return ActionResult.SUCCESS;
-    }
 }
