@@ -1,5 +1,7 @@
 package com.dmu.wikiwindowopener.item;
 
+import com.dmu.wikiwindowopener.screens.WikiScreen;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.UnbreakableComponent;
 import net.minecraft.entity.player.PlayerEntity;
@@ -22,7 +24,10 @@ public class WikiOpener extends Item {
     }
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
-        user.playSound(SoundEvents.BLOCK_WOOL_BREAK, 1.0F, 1.0F);
+        user.playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 1.0F);
+        MinecraftClient.getInstance().setScreen(
+                new WikiScreen(Text.empty())
+        );
         return ActionResult.SUCCESS;
     }
 
