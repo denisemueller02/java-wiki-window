@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "wikiwindowopener",
+	"version": "${version}",
+	"name": "Wiki Window Opener",
+	"description": "An item that  opens the corresponding minecraft Wiki Page",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/denisemueller02/java-wiki-window"
+	},
+	"license": "MIT",
+	"icon": "assets/wikiwindowopener/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.dmu.wikiwindowopener.WikiWindowOpener"
+		],
+		"fabric-datagen": [
+			"com.dmu.wikiwindowopener.WikiWindowOpenerDataGenerator"
+		]
+	},
+	"mixins": [
+		"wikiwindowopener.mixins.json"
+	],
+	"client":[
+		"com.dmu.wikiwindowopener.WikiWindowOpenerClient"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.10",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
