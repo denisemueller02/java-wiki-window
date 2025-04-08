@@ -35,17 +35,8 @@ public class WikiOpener extends Item {
 
             String url = "https://minecraft.wiki/";
             MinecraftClient client = MinecraftClient.getInstance();
-
-            client.setScreen(new net.minecraft.client.gui.screen.ConfirmLinkScreen(
-                    (open) -> {
-                        if (open) {
-                            Util.getOperatingSystem().open(url);
-                        }
-                        client.setScreen(null); // Return to game
-                    },
-                    url,
-                    true // show "Do not show this again" checkbox
-            ));
+            Util.getOperatingSystem().open(url);
+            
         }
 
         return ActionResult.SUCCESS;
