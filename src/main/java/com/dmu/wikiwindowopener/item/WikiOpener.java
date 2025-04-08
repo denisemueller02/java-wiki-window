@@ -14,6 +14,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Util;
 import net.minecraft.world.World;
 
 import java.awt.*;
@@ -30,27 +31,26 @@ public class WikiOpener extends Item {
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         if (world.isClient()) {
-            // Create a clickable chat message with a link
-            Text linkText = Text.literal("Click here to open the Minecraft Wiki")
-                    .styled(style -> style
-                            .withColor(Formatting.AQUA)
-                            .withUnderline(true)
-                            .withClickEvent(new net.minecraft.text.ClickEvent(
-                                    net.minecraft.text.ClickEvent.Action.OPEN_URL,
-                                    "https://minecraft.wiki/"
-                            ))
-                            .withHoverEvent(new net.minecraft.text.HoverEvent(
-                                    net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                                    Text.literal("Opens the official Minecraft Wiki")
-                            ))
-                    );
-
-            user.sendMessage(linkText, false); // false: not an action bar message
             user.playSound(SoundEvents.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 1.0F);
+
+            String url = "https://minecraft.wiki/";
+            MinecraftClient client = MinecraftClient.getInstance();
+
+            client.setScreen(new net.minecraft.client.gui.screen.ConfirmLinkScreen(
+                    (open) -> {
+                        if (open) {
+                            Util.getOperatingSystem().open(url);
+                        }
+                        client.setScreen(null); // Return to game
+                    },
+                    url,
+                    true // show "Do not show this again" checkbox
+            ));
         }
 
         return ActionResult.SUCCESS;
     }
+
 
 
     @Override
