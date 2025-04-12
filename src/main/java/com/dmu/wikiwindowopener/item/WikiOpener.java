@@ -1,8 +1,6 @@
 package com.dmu.wikiwindowopener.item;
 
-import com.dmu.wikiwindowopener.screens.WikiScreen;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.navigation.GuiNavigation;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.UnbreakableComponent;
 import net.minecraft.entity.player.PlayerEntity;
@@ -17,10 +15,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
 import net.minecraft.world.World;
 
-import java.awt.*;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 
 public class WikiOpener extends Item {
@@ -28,7 +22,6 @@ public class WikiOpener extends Item {
         super(settings);
         settings.component(DataComponentTypes.UNBREAKABLE, new UnbreakableComponent(true));
     }
-
 
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
@@ -47,9 +40,9 @@ public class WikiOpener extends Item {
 
                     String url = "https://minecraft.wiki/wiki/" + itemName;
 
-                    Util.getOperatingSystem().open(url);
+                    openWikiUrl(url);  // Open the URL and handle any exceptions
                     return ActionResult.SUCCESS;
-                } 
+                }
             }
 
             // Normal behavior: block lookup
@@ -59,21 +52,40 @@ public class WikiOpener extends Item {
                 var pos = blockHitResult.getBlockPos();
                 var state = world.getBlockState(pos);
                 var block = state.getBlock();
-                var id = net.minecraft.registry.Registries.BLOCK.getId(block);
 
+                // Check if the block is a liquid (like water)
+                if (block.getDefaultState().isLiquid()) {
+                    // If the player is sneaking, ignore the liquid
+                    if (!user.isSneaking()) {
+                        String fluidName = capitalizeWords(block.asItem().getName().getString());
+                        String url = "https://minecraft.wiki/wiki/" + fluidName;
+                        openWikiUrl(url);  // Open the fluid's wiki URL
+                    }
+                    return ActionResult.SUCCESS;
+                }
+
+                var id = net.minecraft.registry.Registries.BLOCK.getId(block);
                 String blockName = id.getPath().replace('_', ' ');
                 blockName = capitalizeWords(blockName);
                 String url = "https://minecraft.wiki/wiki/" + blockName;
 
-                Util.getOperatingSystem().open(url);
+                openWikiUrl(url);  // Open the block's wiki URL
             } else {
-                Util.getOperatingSystem().open("https://minecraft.wiki/");
+                openWikiUrl("https://minecraft.wiki/");  // Open the general Wiki URL if nothing is hit
             }
         }
 
         return ActionResult.SUCCESS;
     }
 
+    // Helper method for opening URLs safely
+    private void openWikiUrl(String url) {
+        try {
+            Util.getOperatingSystem().open(url);
+        } catch (Exception e) {
+            System.err.println("Failed to open Wiki URL: " + url);
+        }
+    }
 
     private String capitalizeWords(String input) {
         String[] words = input.split(" ");
@@ -91,21 +103,14 @@ public class WikiOpener extends Item {
     private String getCorrectedWikiName(String itemIdPath) {
         return switch (itemIdPath) {
             case "flint_and_steel" -> "Flint_and_Steel";
-            case "dragon_egg" -> "Dragon_Egg";
-            case "ender_pearl" -> "Ender_Pearl";
-            case "enchanted_book" -> "Enchanted_Book";
+            case "enchanted_book" -> "Enchanted_Book"; //switch needs second case
             default -> capitalizeWords(itemIdPath.replace('_', ' '));
         };
     }
-
-
-
-
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.translatable("Right Click any Block using this tool to open its Minecraft Wiki page!").formatted(Formatting.GOLD));
         tooltip.add(Text.translatable("Use in offhand to look up the item in your main hand.").formatted(Formatting.GRAY));
     }
-
 }
