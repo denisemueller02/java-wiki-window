@@ -11,15 +11,21 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	// MCEF repo
 	maven {
 		url = uri('https://mcef-download.cinemamod.com/repositories/releases')
 	}
+
+	// Standard Maven Central for Mixin and other libs
+	mavenCentral()
+
+	// SpongePowered repo in case Mixin is not in Maven Central
+	maven {
+		name = "SpongePowered"
+		url = uri("https://repo.spongepowered.org/maven")
+	}
 }
+
 
 fabricApi {
 	configureDataGeneration {
@@ -36,8 +42,15 @@ dependencies {
 	modRuntimeOnly 'com.cinemamod:mcef-fabric:2.1.6-1.21.4'
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
+	// Mixin annotation processor
+	annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
+
 }
+
+loom {
+	accessWidenerPath = file("src/main/resources/wikiwindowopener.accesswidener")
+}
+
 
 processResources {
 	inputs.property "version", project.version

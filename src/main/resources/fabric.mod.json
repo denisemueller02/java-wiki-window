@@ -25,6 +25,7 @@
 	"mixins": [
 		"wikiwindowopener.mixins.json"
 	],
+	"accessWidener": "wikiwindowopener.accesswidener",
 	"client":[
 		"com.dmu.wikiwindowopener.WikiWindowOpenerClient"
 	],

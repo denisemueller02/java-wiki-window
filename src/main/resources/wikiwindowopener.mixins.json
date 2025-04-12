@@ -2,8 +2,9 @@
 	"required": true,
 	"package": "com.dmu.wikiwindowopener.mixin",
 	"compatibilityLevel": "JAVA_21",
-	"mixins": [
-		"ExampleMixin"
+	"mixins": [],
+	"client": [
+		"ClientPlayerInteractionManagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
