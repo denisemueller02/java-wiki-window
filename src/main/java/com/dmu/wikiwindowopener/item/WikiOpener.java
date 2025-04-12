@@ -43,8 +43,8 @@ public class WikiOpener extends Item {
                 if (!mainHandStack.isEmpty()) {
                     var id = net.minecraft.registry.Registries.ITEM.getId(mainHandStack.getItem());
 
-                    String itemName = id.getPath().replace('_', ' ');
-                    itemName = capitalizeWords(itemName);
+                    String itemName = getCorrectedWikiName(id.getPath());
+
                     String url = "https://minecraft.wiki/wiki/" + itemName;
 
                     Util.getOperatingSystem().open(url);
@@ -90,6 +90,16 @@ public class WikiOpener extends Item {
             }
         }
         return sb.toString().replaceAll("_$", ""); // Remove trailing underscore
+    }
+
+    private String getCorrectedWikiName(String itemIdPath) {
+        return switch (itemIdPath) {
+            case "flint_and_steel" -> "Flint_and_Steel";
+            case "dragon_egg" -> "Dragon_Egg";
+            case "ender_pearl" -> "Ender_Pearl";
+            case "enchanted_book" -> "Enchanted_Book";
+            default -> capitalizeWords(itemIdPath.replace('_', ' '));
+        };
     }
 
 
