@@ -49,11 +49,7 @@ public class WikiOpener extends Item {
 
                     Util.getOperatingSystem().open(url);
                     return ActionResult.SUCCESS;
-                } else {
-                    // Fall back to homepage if main hand is empty
-                    Util.getOperatingSystem().open("https://minecraft.wiki/");
-                    return ActionResult.SUCCESS;
-                }
+                } 
             }
 
             // Normal behavior: block lookup
