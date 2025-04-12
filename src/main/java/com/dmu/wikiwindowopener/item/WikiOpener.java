@@ -37,7 +37,26 @@ public class WikiOpener extends Item {
 
             MinecraftClient client = MinecraftClient.getInstance();
 
-            // Perform a raycast to find the block the player is looking at
+            // If used in the offhand, get item from main hand
+            if (hand == Hand.OFF_HAND) {
+                ItemStack mainHandStack = user.getMainHandStack();
+                if (!mainHandStack.isEmpty()) {
+                    var id = net.minecraft.registry.Registries.ITEM.getId(mainHandStack.getItem());
+
+                    String itemName = id.getPath().replace('_', ' ');
+                    itemName = capitalizeWords(itemName);
+                    String url = "https://minecraft.wiki/wiki/" + itemName;
+
+                    Util.getOperatingSystem().open(url);
+                    return ActionResult.SUCCESS;
+                } else {
+                    // Fall back to homepage if main hand is empty
+                    Util.getOperatingSystem().open("https://minecraft.wiki/");
+                    return ActionResult.SUCCESS;
+                }
+            }
+
+            // Normal behavior: block lookup
             var hitResult = client.crosshairTarget;
             if (hitResult != null && hitResult.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK) {
                 var blockHitResult = (net.minecraft.util.hit.BlockHitResult) hitResult;
@@ -46,20 +65,19 @@ public class WikiOpener extends Item {
                 var block = state.getBlock();
                 var id = net.minecraft.registry.Registries.BLOCK.getId(block);
 
-                // Build the URL using the block ID (e.g. "minecraft:stone" → "Stone")
                 String blockName = id.getPath().replace('_', ' ');
                 blockName = capitalizeWords(blockName);
                 String url = "https://minecraft.wiki/wiki/" + blockName;
 
                 Util.getOperatingSystem().open(url);
             } else {
-                // Default wiki homepage if nothing is hit
                 Util.getOperatingSystem().open("https://minecraft.wiki/");
             }
         }
 
         return ActionResult.SUCCESS;
     }
+
 
     private String capitalizeWords(String input) {
         String[] words = input.split(" ");
@@ -80,6 +98,8 @@ public class WikiOpener extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("Right Click any Block using this tool to open its minecraft Wiki page!").formatted(Formatting.GOLD));
+        tooltip.add(Text.translatable("Right Click any Block using this tool to open its Minecraft Wiki page!").formatted(Formatting.GOLD));
+        tooltip.add(Text.translatable("Use in offhand to look up the item in your main hand.").formatted(Formatting.GRAY));
     }
+
 }
