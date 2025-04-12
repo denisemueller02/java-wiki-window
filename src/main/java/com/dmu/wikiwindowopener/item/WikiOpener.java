@@ -1,9 +1,10 @@
 package com.dmu.wikiwindowopener.item;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.UnbreakableComponent;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -13,6 +14,10 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
 import java.util.List;
@@ -20,8 +25,8 @@ import java.util.List;
 public class WikiOpener extends Item {
     public WikiOpener(Settings settings) {
         super(settings);
-        settings.component(DataComponentTypes.UNBREAKABLE, new UnbreakableComponent(true));
     }
+
 
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
@@ -35,47 +40,84 @@ public class WikiOpener extends Item {
                 ItemStack mainHandStack = user.getMainHandStack();
                 if (!mainHandStack.isEmpty()) {
                     var id = net.minecraft.registry.Registries.ITEM.getId(mainHandStack.getItem());
-
                     String itemName = getCorrectedWikiName(id.getPath());
-
                     String url = "https://minecraft.wiki/wiki/" + itemName;
-
                     openWikiUrl(url);  // Open the URL and handle any exceptions
                     return ActionResult.SUCCESS;
                 }
             }
 
-            // Normal behavior: block lookup
+            // First, check if the player is sneaking. If not, try to raycast for fluids.
+            if (!user.isSneaking()) {
+                // Perform custom ray tracing for fluid
+                HitResult result = rayTrace(user, 5.0);  // 5.0 is the reach distance
+
+                if (result != null && result.getType() == HitResult.Type.BLOCK) {
+                    BlockHitResult blockHitResult = (BlockHitResult) result;
+                    var pos = blockHitResult.getBlockPos();
+                    var state = world.getBlockState(pos);
+
+                    // Raycasting for fluid (check if the ray hit a fluid)
+                    Fluid fluid = state.getFluidState().getFluid();
+                    if (fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER) {
+                        String url = "https://minecraft.wiki/w/Water";
+                        openWikiUrl(url);  // Open the fluid's wiki URL
+                        return ActionResult.SUCCESS;
+                    } else if (fluid == Fluids.LAVA || fluid == Fluids.FLOWING_LAVA) {
+                        String url = "https://minecraft.wiki/w/Lava";
+                        openWikiUrl(url);  // Open the fluid's wiki URL
+                        return ActionResult.SUCCESS;
+                    }
+                }
+            }
+
+            // Fall back to normal behavior if no fluid was detected or if sneaking
+            // Fall back to normal behavior if no fluid was detected or if sneaking
+            // Fall back to normal behavior if no fluid was detected or if sneaking
             var hitResult = client.crosshairTarget;
-            if (hitResult != null && hitResult.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK) {
-                var blockHitResult = (net.minecraft.util.hit.BlockHitResult) hitResult;
+            if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+                BlockHitResult blockHitResult = (BlockHitResult) hitResult;
                 var pos = blockHitResult.getBlockPos();
                 var state = world.getBlockState(pos);
                 var block = state.getBlock();
 
-                // Check if the block is a liquid (like water)
-                if (block.getDefaultState().isLiquid()) {
-                    // If the player is sneaking, ignore the liquid
-                    if (!user.isSneaking()) {
-                        String fluidName = capitalizeWords(block.asItem().getName().getString());
-                        String url = "https://minecraft.wiki/wiki/" + fluidName;
-                        openWikiUrl(url);  // Open the fluid's wiki URL
-                    }
-                    return ActionResult.SUCCESS;
-                }
-
-                var id = net.minecraft.registry.Registries.BLOCK.getId(block);
-                String blockName = id.getPath().replace('_', ' ');
+                // Get block name without "minecraft:" and capitalize it
+                String blockName = block.getTranslationKey().replace("block.minecraft.", "").replace('_', ' ');
                 blockName = capitalizeWords(blockName);
                 String url = "https://minecraft.wiki/wiki/" + blockName;
-
-                openWikiUrl(url);  // Open the block's wiki URL
-            } else {
-                openWikiUrl("https://minecraft.wiki/");  // Open the general Wiki URL if nothing is hit
+                openWikiUrl(url);
+                return ActionResult.SUCCESS;
             }
+            else if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
+                // Handle entity-based lookups if needed
+                String entityName = hitResult.getClass().getName();
+                String url = "https://minecraft.wiki/wiki/" + entityName;
+                openWikiUrl(url);
+                return ActionResult.SUCCESS;
+            }
+
+            // Default to opening the general Wiki page if nothing is hit
+            openWikiUrl("https://minecraft.wiki/");
         }
 
         return ActionResult.SUCCESS;
+    }
+
+
+
+    // Custom rayTrace method for detecting blocks or fluids
+
+    public HitResult rayTrace(Entity entity, double playerReach) {
+        Vec3d eyePosition = entity.getEyePos();  // Eye position of the entity (player)
+        Vec3d lookVector = entity.getRotationVector().multiply(playerReach);  // Look direction, multiplied by reach distance
+        Vec3d traceEnd = eyePosition.add(lookVector);  // End position of the ray trace
+
+        // Raycast context to only consider fluids
+        RaycastContext.FluidHandling fluidView = RaycastContext.FluidHandling.SOURCE_ONLY;
+        RaycastContext context = new RaycastContext(eyePosition, traceEnd, RaycastContext.ShapeType.OUTLINE, fluidView, entity);
+
+        // Perform the ray trace
+        return entity.getEntityWorld().raycast(context);
     }
 
     // Helper method for opening URLs safely
@@ -110,7 +152,9 @@ public class WikiOpener extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("Right Click any Block using this tool to open its Minecraft Wiki page!").formatted(Formatting.GOLD));
-        tooltip.add(Text.translatable("Use in offhand to look up the item in your main hand.").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("Right-click a block for its Wiki.").formatted(Formatting.GOLD));
+        tooltip.add(Text.translatable("Offhand: Lookup main-hand item.").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("Sneak: Ignore fluids & usesable items in main hand.").formatted(Formatting.GRAY));
+
     }
 }
