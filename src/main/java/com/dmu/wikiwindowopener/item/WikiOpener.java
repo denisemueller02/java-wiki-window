@@ -15,6 +15,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
@@ -40,9 +41,9 @@ public class WikiOpener extends Item {
                 ItemStack mainHandStack = user.getMainHandStack();
                 if (!mainHandStack.isEmpty()) {
                     var id = net.minecraft.registry.Registries.ITEM.getId(mainHandStack.getItem());
-                    String itemName = getCorrectedWikiName(id.getPath());
-                    String url = "https://minecraft.wiki/wiki/" + itemName;
-                    openWikiUrl(url);  // Open the URL and handle any exceptions
+                    String itemName = getWikiPageFromItemName(mainHandStack, user);
+                    openWikiUrl(user, itemName);
+                    // Open the URL and handle any exceptions
                     return ActionResult.SUCCESS;
                 }
             }
@@ -60,19 +61,15 @@ public class WikiOpener extends Item {
                     // Raycasting for fluid (check if the ray hit a fluid)
                     Fluid fluid = state.getFluidState().getFluid();
                     if (fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER) {
-                        String url = "https://minecraft.wiki/w/Water";
-                        openWikiUrl(url);  // Open the fluid's wiki URL
+                        openWikiUrl(user, "Water");  // Open the fluid's wiki URL
                         return ActionResult.SUCCESS;
                     } else if (fluid == Fluids.LAVA || fluid == Fluids.FLOWING_LAVA) {
-                        String url = "https://minecraft.wiki/w/Lava";
-                        openWikiUrl(url);  // Open the fluid's wiki URL
+                        openWikiUrl(user, "Lava");  // Open the fluid's wiki URL
                         return ActionResult.SUCCESS;
                     }
                 }
             }
 
-            // Fall back to normal behavior if no fluid was detected or if sneaking
-            // Fall back to normal behavior if no fluid was detected or if sneaking
             // Fall back to normal behavior if no fluid was detected or if sneaking
             var hitResult = client.crosshairTarget;
             if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
@@ -84,20 +81,29 @@ public class WikiOpener extends Item {
                 // Get block name without "minecraft:" and capitalize it
                 String blockName = block.getTranslationKey().replace("block.minecraft.", "").replace('_', ' ');
                 blockName = capitalizeWords(blockName);
-                String url = "https://minecraft.wiki/wiki/" + blockName;
-                openWikiUrl(url);
+                openWikiUrl(user, blockName);
                 return ActionResult.SUCCESS;
-            }
-            else if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
-                // Handle entity-based lookups if needed
-                String entityName = hitResult.getClass().getName();
-                String url = "https://minecraft.wiki/wiki/" + entityName;
-                openWikiUrl(url);
+            } else if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
+                // Handle entity-based lookups
+                var entityHitResult = (EntityHitResult) hitResult;
+                var entity = entityHitResult.getEntity();
+
+                // Get entity name and remove "Entity.minecraft." and "minecraft:" to clean it up
+                String entityName = entity.getType().toString()
+                        .replace("minecraft:", "")         // Remove "minecraft:"
+                        .replace("entity.minecraft.", "")   // Remove "Entity.minecraft."
+                        .replace('_', ' ');                // Replace underscores with spaces
+
+                entityName = capitalizeWords(entityName);  // Capitalize the entity name
+
+                openWikiUrl(user, entityName);
                 return ActionResult.SUCCESS;
             }
 
+
+
             // Default to opening the general Wiki page if nothing is hit
-            openWikiUrl("https://minecraft.wiki/");
+            openWikiUrl(user, "https://minecraft.wiki/");
         }
 
         return ActionResult.SUCCESS;
@@ -121,13 +127,30 @@ public class WikiOpener extends Item {
     }
 
     // Helper method for opening URLs safely
-    private void openWikiUrl(String url) {
+    private void openWikiUrl(PlayerEntity player, String pageTitle) {
         try {
-            Util.getOperatingSystem().open(url);
+            MinecraftClient client = MinecraftClient.getInstance();
+            String languageCode = client.options.language;
+            String baseUrl = languageCode.equalsIgnoreCase("de_de") ? "https://de.minecraft.wiki/w/" : "https://minecraft.wiki/wiki/";
+            Util.getOperatingSystem().open(baseUrl + pageTitle);
         } catch (Exception e) {
-            System.err.println("Failed to open Wiki URL: " + url);
+            System.err.println("Failed to open Wiki URL for page: " + pageTitle);
         }
     }
+
+    private String getWikiPageFromItemName(ItemStack stack, PlayerEntity player) {
+        String language = MinecraftClient.getInstance().options.language;
+        if (language.equalsIgnoreCase("de_de")) {
+            // Use localized name in German
+            return stack.getName().getString().replace(' ', '_');
+        } else {
+            // Fall back to ID-based method for English
+            var id = net.minecraft.registry.Registries.ITEM.getId(stack.getItem());
+            return getCorrectedWikiName(id.getPath());
+        }
+    }
+
+
 
     private String capitalizeWords(String input) {
         String[] words = input.split(" ");
@@ -152,9 +175,9 @@ public class WikiOpener extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("Right-click a block for its Wiki.").formatted(Formatting.GOLD));
+        tooltip.add(Text.translatable("Right-click a block or Entity for its Wiki-Entry.").formatted(Formatting.GOLD));
         tooltip.add(Text.translatable("Offhand: Lookup main-hand item.").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("Sneak: Ignore fluids & usesable items in main hand.").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("Sneak: Ignore fluids & usable items in main hand.").formatted(Formatting.GRAY));
 
     }
 }
