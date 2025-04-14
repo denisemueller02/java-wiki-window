@@ -1,0 +1,6 @@
+{
+  "item.wikiwindowopener.wiki_opener": "Wiki Öffner",
+  "item.wikiopener.tooltip.use": "Rechtsklick auf einen Block oder ein Wesen, um den Wiki-Eintrag zu öffnen.",
+  "item.wikiopener.tooltip.offhand": "Zweite Hand: Suche nach dem Haupt-Hand-Gegenstand.",
+  "item.wikiopener.tooltip.sneak": "Schleichen: Flüssigkeiten & benutzbare Items in der Haupthand ignorieren."
+}

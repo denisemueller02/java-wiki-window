@@ -175,9 +175,9 @@ public class WikiOpener extends Item {
 
     @Override
     public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
-        tooltip.add(Text.translatable("Right-click a block or Entity for its Wiki-Entry.").formatted(Formatting.GOLD));
-        tooltip.add(Text.translatable("Offhand: Lookup main-hand item.").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("Sneak: Ignore fluids & usable items in main hand.").formatted(Formatting.GRAY));
-
+        tooltip.add(Text.translatable("item.wikiopener.tooltip.use").formatted(Formatting.GOLD));
+        tooltip.add(Text.translatable("item.wikiopener.tooltip.offhand").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("item.wikiopener.tooltip.sneak").formatted(Formatting.GRAY));
     }
+
 }

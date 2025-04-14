@@ -1,3 +1,6 @@
 {
-  "item.wikiwindowopener.wiki_opener": "Wiki Opener"
+  "item.wikiwindowopener.wiki_opener": "Wiki Opener",
+  "item.wikiopener.tooltip.use": "Right-click a block or Entity for its Wiki-Entry.",
+  "item.wikiopener.tooltip.offhand": "Offhand: Lookup main-hand item.",
+  "item.wikiopener.tooltip.sneak": "Sneak: Ignore fluids & usable items in main hand."
 }
