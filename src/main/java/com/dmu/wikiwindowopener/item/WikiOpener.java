@@ -1,6 +1,10 @@
 package com.dmu.wikiwindowopener.item;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.resource.language.LanguageManager;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
@@ -8,11 +12,13 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.resource.Resource;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
@@ -21,13 +27,15 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.World;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 
 public class WikiOpener extends Item {
     public WikiOpener(Settings settings) {
         super(settings);
     }
-
 
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
@@ -43,34 +51,30 @@ public class WikiOpener extends Item {
                     var id = net.minecraft.registry.Registries.ITEM.getId(mainHandStack.getItem());
                     String itemName = getWikiPageFromItemName(mainHandStack, user);
                     openWikiUrl(user, itemName);
-                    // Open the URL and handle any exceptions
                     return ActionResult.SUCCESS;
                 }
             }
 
-            // First, check if the player is sneaking. If not, try to raycast for fluids.
+
             if (!user.isSneaking()) {
-                // Perform custom ray tracing for fluid
-                HitResult result = rayTrace(user, 5.0);  // 5.0 is the reach distance
+                HitResult result = rayTrace(user, 5.0);
 
                 if (result != null && result.getType() == HitResult.Type.BLOCK) {
                     BlockHitResult blockHitResult = (BlockHitResult) result;
                     var pos = blockHitResult.getBlockPos();
                     var state = world.getBlockState(pos);
 
-                    // Raycasting for fluid (check if the ray hit a fluid)
                     Fluid fluid = state.getFluidState().getFluid();
                     if (fluid == Fluids.WATER || fluid == Fluids.FLOWING_WATER) {
-                        openWikiUrl(user, "Water");  // Open the fluid's wiki URL
+                        openWikiUrl(user, "Water");
                         return ActionResult.SUCCESS;
                     } else if (fluid == Fluids.LAVA || fluid == Fluids.FLOWING_LAVA) {
-                        openWikiUrl(user, "Lava");  // Open the fluid's wiki URL
+                        openWikiUrl(user, "Lava");
                         return ActionResult.SUCCESS;
                     }
                 }
             }
 
-            // Fall back to normal behavior if no fluid was detected or if sneaking
             var hitResult = client.crosshairTarget;
             if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
                 BlockHitResult blockHitResult = (BlockHitResult) hitResult;
@@ -78,55 +82,42 @@ public class WikiOpener extends Item {
                 var state = world.getBlockState(pos);
                 var block = state.getBlock();
 
-                // Get block name without "minecraft:" and capitalize it
                 String blockName = block.getTranslationKey().replace("block.minecraft.", "").replace('_', ' ');
                 blockName = capitalizeWords(blockName);
                 openWikiUrl(user, blockName);
                 return ActionResult.SUCCESS;
             } else if (hitResult != null && hitResult.getType() == HitResult.Type.ENTITY) {
-                // Handle entity-based lookups
                 var entityHitResult = (EntityHitResult) hitResult;
                 var entity = entityHitResult.getEntity();
 
-                // Get entity name and remove "Entity.minecraft." and "minecraft:" to clean it up
                 String entityName = entity.getType().toString()
-                        .replace("minecraft:", "")         // Remove "minecraft:"
-                        .replace("entity.minecraft.", "")   // Remove "Entity.minecraft."
-                        .replace('_', ' ');                // Replace underscores with spaces
+                        .replace("minecraft:", "")
+                        .replace("entity.minecraft.", "")
+                        .replace('_', ' ');
 
-                entityName = capitalizeWords(entityName);  // Capitalize the entity name
+                entityName = capitalizeWords(entityName);
 
                 openWikiUrl(user, entityName);
                 return ActionResult.SUCCESS;
             }
 
-
-
-            // Default to opening the general Wiki page if nothing is hit
             openWikiUrl(user, "https://minecraft.wiki/");
         }
 
         return ActionResult.SUCCESS;
     }
 
-
-
-    // Custom rayTrace method for detecting blocks or fluids
-
     public HitResult rayTrace(Entity entity, double playerReach) {
-        Vec3d eyePosition = entity.getEyePos();  // Eye position of the entity (player)
-        Vec3d lookVector = entity.getRotationVector().multiply(playerReach);  // Look direction, multiplied by reach distance
-        Vec3d traceEnd = eyePosition.add(lookVector);  // End position of the ray trace
+        Vec3d eyePosition = entity.getEyePos();
+        Vec3d lookVector = entity.getRotationVector().multiply(playerReach);
+        Vec3d traceEnd = eyePosition.add(lookVector);
 
-        // Raycast context to only consider fluids
         RaycastContext.FluidHandling fluidView = RaycastContext.FluidHandling.SOURCE_ONLY;
         RaycastContext context = new RaycastContext(eyePosition, traceEnd, RaycastContext.ShapeType.OUTLINE, fluidView, entity);
 
-        // Perform the ray trace
         return entity.getEntityWorld().raycast(context);
     }
 
-    // Helper method for opening URLs safely
     private void openWikiUrl(PlayerEntity player, String pageTitle) {
         try {
             MinecraftClient client = MinecraftClient.getInstance();
@@ -139,17 +130,22 @@ public class WikiOpener extends Item {
     }
 
     private String getWikiPageFromItemName(ItemStack stack, PlayerEntity player) {
-        String language = MinecraftClient.getInstance().options.language;
+        MinecraftClient client = MinecraftClient.getInstance();
+        String language = client.options.language;
+
+        // Always get the translation key (like "item.minecraft.iron_pickaxe")
+        String translationKey = stack.getItem().getTranslationKey();
+
         if (language.equalsIgnoreCase("de_de")) {
-            // Use localized name in German
-            return stack.getName().getString().replace(' ', '_');
+            // Just resolve the localized name normally
+            String translated = Text.translatable(translationKey).getString();
+            return translated.replace(' ', '_');
         } else {
-            // Fall back to ID-based method for English
+            // Use registry ID for English or fallback
             var id = net.minecraft.registry.Registries.ITEM.getId(stack.getItem());
             return getCorrectedWikiName(id.getPath());
         }
     }
-
 
 
     private String capitalizeWords(String input) {
@@ -159,16 +155,16 @@ public class WikiOpener extends Item {
             if (!word.isEmpty()) {
                 sb.append(Character.toUpperCase(word.charAt(0)))
                         .append(word.substring(1))
-                        .append("_");  // Use underscore instead of space for actual Wiki URL
+                        .append("_");
             }
         }
-        return sb.toString().replaceAll("_$", ""); // Remove trailing underscore
+        return sb.toString().replaceAll("_$", "");
     }
 
     private String getCorrectedWikiName(String itemIdPath) {
         return switch (itemIdPath) {
             case "flint_and_steel" -> "Flint_and_Steel";
-            case "enchanted_book" -> "Enchanted_Book"; //switch needs second case
+            case "enchanted_book" -> "Enchanted_Book";
             default -> capitalizeWords(itemIdPath.replace('_', ' '));
         };
     }
@@ -179,5 +175,4 @@ public class WikiOpener extends Item {
         tooltip.add(Text.translatable("item.wikiopener.tooltip.offhand").formatted(Formatting.GRAY));
         tooltip.add(Text.translatable("item.wikiopener.tooltip.sneak").formatted(Formatting.GRAY));
     }
-
 }
