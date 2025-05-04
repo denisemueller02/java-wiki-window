@@ -36,6 +36,3 @@ This mod was developed as part of a user study on immersion, presence, and inter
   - Item names are translated accordingly.
 
 
-## 📜 License
-
-This project was created for academic research purposes. Licensing terms may apply depending on the final publication.
